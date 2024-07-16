@@ -100,8 +100,34 @@ void AggregateVecPhysicalOperator::update_aggregate_state(void *state, const Col
 
 RC AggregateVecPhysicalOperator::next(Chunk &chunk)
 {
-  // your code here
-  exit(-1);
+
+  if (chunk_.capacity() == 0) {
+    return RC::RECORD_EOF;
+  }
+
+  RC rc = RC::SUCCESS;
+
+  output_chunk_.reset_data();
+
+  for (size_t aggr_idx = 0; aggr_idx < aggregate_expressions_.size(); aggr_idx++) {
+    auto *aggregate_expr = static_cast<AggregateExpr *>(aggregate_expressions_[aggr_idx]);
+    void* state = aggr_values_.at(aggr_idx);
+    if (aggregate_expr->aggregate_type() == AggregateExpr::Type::SUM) {
+      if (aggregate_expr->value_type() == AttrType::INTS) {
+        SumState<int> *sum_state = reinterpret_cast<SumState<int> *>(state);
+        output_chunk_.column(aggr_idx).append_one(reinterpret_cast<char*>(&sum_state->value));
+      } else if (aggregate_expr->value_type() == AttrType::FLOATS) {
+        SumState<float> *sum_state = reinterpret_cast<SumState<float> *>(state);
+        output_chunk_.column(aggr_idx).append_one(reinterpret_cast<char*>(&sum_state->value));
+      } else {
+        ASSERT(false, "not supported value type");
+      }
+    }
+  }
+
+  rc = chunk.reference(output_chunk_);
+  chunk_.reset();
+  return rc;
 }
 
 RC AggregateVecPhysicalOperator::close()
