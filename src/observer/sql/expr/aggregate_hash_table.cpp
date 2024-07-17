@@ -242,8 +242,134 @@ void LinearProbingAggregateHashTable<V>::resize_if_need()
 template <typename V>
 void LinearProbingAggregateHashTable<V>::add_batch(int *input_keys, V *input_values, int len)
 {
-  // your code here
-  exit(-1);
+  for (int i = 0; i < len; i++) {
+    int key = input_keys[i];
+    V value = input_values[i];
+    int index = (key % capacity_ + capacity_) % capacity_;
+    while (keys_[index] != EMPTY_KEY && keys_[index] != key) {
+      index = (index + 1) % capacity_;
+    }
+    if (keys_[index] == EMPTY_KEY) {
+      keys_[index] = key;
+      values_[index] = value;
+    } else {
+      aggregate(&values_[index], value);
+    }
+  }
+
+  // resize_if_need();
+
+  // __m256i inv = _mm256_set1_epi32(-1); // Initialize inv to all -1 (valid)
+  // __m256i off = _mm256_setzero_si256(); // Initialize off to all 0
+  // int i = 0;
+
+  // for (; i + SIMD_WIDTH <= len;) {
+  //   // 1. Selective load keys and values
+  //   int keys[SIMD_WIDTH];
+  //   V values[SIMD_WIDTH];
+  //   selective_load<int>(input_keys, i, keys, inv);
+  //   selective_load<V>(input_values, i, values, inv);
+
+  //   i += _mm256_movemask_epi8(_mm256_cmpeq_epi32(inv, _mm256_set1_epi32(-1)));
+
+  //   // 2. Compute hash values
+  //   __m256i hash_vals = _mm256_setr_epi32(
+  //     (keys[0] % capacity_ + capacity_) % capacity_,
+  //     (keys[1] % capacity_ + capacity_) % capacity_,
+  //     (keys[2] % capacity_ + capacity_) % capacity_,
+  //     (keys[3] % capacity_ + capacity_) % capacity_,
+  //     (keys[4] % capacity_ + capacity_) % capacity_,
+  //     (keys[5] % capacity_ + capacity_) % capacity_,
+  //     (keys[6] % capacity_ + capacity_) % capacity_,
+  //     (keys[7] % capacity_ + capacity_) % capacity_
+  //   );
+
+  //   // 3. Add offset to hash values
+  //   // hash_vals = _mm256_add_epi32(hash_vals, off);
+
+  //   for (int j = 0; j < SIMD_WIDTH; ++j) {
+  //     if (keys[j] != EMPTY_KEY) {
+  //       int index = mm256_extract_epi32_var_indx(hash_vals, j);
+  //       while (keys_[index] != EMPTY_KEY && keys_[index] != keys[j]) {
+  //         index = (index + 1) % capacity_;
+  //       }
+  //       if (keys_[index] == EMPTY_KEY) {
+  //         keys_[index] = keys[j];
+  //         values_[index] = values[j];
+  //       } else {
+  //         aggregate(&values_[index], values[j]);
+  //       }
+  //     }
+  //   }
+
+
+  //    __m256i table_keys = _mm256_setzero_si256();
+  //   for (int j = 0; j < SIMD_WIDTH; ++j) {
+  //     if (keys[j] != EMPTY_KEY) {
+  //       int index = mm256_extract_epi32_var_indx(hash_vals, j);
+  //       table_keys = _mm256_insert_epi32(table_keys, keys_[index], j);
+  //     }
+  //   }
+
+  //   for (int j = 0; j < SIMD_WIDTH; ++j) {
+  //     if (keys[j] == table_keys[j]) {
+  //       inv = _mm256_insert_epi32(inv, -1, j);
+  //       off = _mm256_insert_epi32(off, 0, j);
+  //     } else {
+  //       inv = _mm256_insert_epi32(inv, 0, j);
+  //       off = _mm256_insert_epi32(off, mm256_extract_epi32_var_indx(off, j) + 1, j);
+  //     }
+  //   }
+  // }
+
+  // for (; i < len; ++i) {
+  //   int key = input_keys[i];
+  //   V value = input_values[i];
+  //   int index = (key % capacity_ + capacity_) % capacity_;
+  //   while (keys_[index] != EMPTY_KEY && keys_[index] != key) {
+  //     index = (index + 1) % capacity_;
+  //   }
+  //   if (keys_[index] == EMPTY_KEY) {
+  //     keys_[index] = key;
+  //     values_[index] = value;
+  //   } else {
+  //     aggregate(&values_[index], value);
+  //   }
+  // }
+
+  // resize_if_need();
+  
+  // __m256i inv = _mm256_set1_epi32(-1);
+  // __m256i off = _mm256_setzero_si256();
+
+  // int i = 0;
+  // for (; i + SIMD_WIDTH <= len; ) {
+  //   int key[SIMD_WIDTH];
+  //   V value[SIMD_WIDTH];
+
+  //   selective_load<int>(input_keys, i, key, inv);
+  //   selective_load<V>(input_values, i, value, inv);
+
+  //   i += _mm256_movemask_epi8(_mm256_cmpeq_epi32(inv, _mm256_set1_epi32(-1)));
+
+  //   __m256i hash_vals = _mm256_set_epi32(
+  //     hash_func(key[7]), hash_func(key[6]), hash_func(key[5]), hash_func(key[4]),
+  //     hash_func(key[3]), hash_func(key[2]), hash_func(key[1]), hash_func(key[0])
+  //   );
+
+  //   __m256i pos = _mm256_add_epi32(hash_vals, off);
+  //   pos = _mm256_and_si256(pos, _mm256_set1_epi32(capacity_ - 1));
+  //   __m256i cmp = _mm256_cmpeq_epi32(keys, _mm256_loadu_si256((__m256i*)key));
+
+  //   inv = _mm256_blendv_epi8(_mm256_set1_epi32(0), inv, cmp); // Invalidate mismatched entries
+  //   off = _mm256_add_epi32(off, _mm256_andnot_si256(cmp, _mm256_set1_epi32(1))); // Increment offsets for mismatches
+     
+
+
+  //   selective_load<V>(V *memory, int offset, V *vec, __m256i &inv);
+  // }
+
+  // resize_if_need();
 
   // inv (invalid) 表示是否有效，inv[i] = -1 表示有效，inv[i] = 0 表示无效。
   // key[SIMD_WIDTH],value[SIMD_WIDTH] 表示当前循环中处理的键值对。

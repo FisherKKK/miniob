@@ -9,6 +9,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 
 #include <stdint.h>
+#include <iostream>
 #include "common/math/simd_util.h"
 
 #if defined(USE_SIMD)
@@ -22,22 +23,36 @@ int mm256_extract_epi32_var_indx(const __m256i vec, const unsigned int i)
 
 int mm256_sum_epi32(const int *values, int size)
 {
-  // your code here
-  int sum = 0;
-  for (int i = 0; i < size; i++) {
-    sum += values[i];
+  __m256i sum = _mm256_setzero_si256();
+  int i;
+  for (i = 0; i <= size - 8; i += 8) {
+    __m256i vec = _mm256_loadu_si256((__m256i*)&values[i]);
+    sum = _mm256_add_epi32(sum, vec);
   }
-  return sum;
+  int result[8];
+  _mm256_storeu_si256((__m256i*)result, sum);
+  int total = result[0] + result[1] + result[2] + result[3] + result[4] + result[5] + result[6] + result[7];
+  for (; i < size; i++) {
+    total += values[i];
+  }
+  return total;
 }
 
 float mm256_sum_ps(const float *values, int size)
 {
-  // your code here
-  float sum = 0;
-  for (int i = 0; i < size; i++) {
-    sum += values[i];
+  __m256 sum = _mm256_setzero_ps();
+  int i;
+  for (i = 0; i <= size - 8; i += 8) {
+    __m256 vec = _mm256_loadu_ps(&values[i]);
+    sum = _mm256_add_ps(sum, vec);
   }
-  return sum;
+  float result[8];
+  _mm256_storeu_ps(result, sum);
+  float total = result[0] + result[1] + result[2] + result[3] + result[4] + result[5] + result[6] + result[7];
+  for (; i < size; i++) {
+    total += values[i];
+  }
+  return total;
 }
 
 template <typename V>
