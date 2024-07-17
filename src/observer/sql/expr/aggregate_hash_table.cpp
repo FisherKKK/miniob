@@ -243,8 +243,8 @@ template <typename V>
 void LinearProbingAggregateHashTable<V>::add_batch(int *input_keys, V *input_values, int len)
 {
   for (int i = 0; i < len; i++) {
-    int key = input_keys[i];
-    V value = input_values[i];
+    auto &key = input_keys[i];
+    auto &value = input_values[i];
     int index = (key % capacity_ + capacity_) % capacity_;
     while (keys_[index] != EMPTY_KEY && keys_[index] != key) {
       index = (index + 1) % capacity_;
@@ -252,12 +252,13 @@ void LinearProbingAggregateHashTable<V>::add_batch(int *input_keys, V *input_val
     if (keys_[index] == EMPTY_KEY) {
       keys_[index] = key;
       values_[index] = value;
+      size_++;
     } else {
       aggregate(&values_[index], value);
     }
   }
 
-  // resize_if_need();
+  resize_if_need();
 
   // __m256i inv = _mm256_set1_epi32(-1); // Initialize inv to all -1 (valid)
   // __m256i off = _mm256_setzero_si256(); // Initialize off to all 0
